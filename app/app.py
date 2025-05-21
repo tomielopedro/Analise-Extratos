@@ -54,7 +54,7 @@ else:
 
 df_pix["Valor"] = df_pix["Valor"].apply(moeda_para_float)
 df_pix["Operação"] = df_pix["Operação"].apply(lambda x: x.replace('Pix', '').strip())
-
+df_pix = df_pix.drop(columns='CPF/CNPJ')
 # === Agrupamento e totais de extrato ===
 df_agrupado = df.groupby('Descricao')['Valor'].sum().reset_index()
 entradas = df_agrupado[df_agrupado['Valor'] > 0]
