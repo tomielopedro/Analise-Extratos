@@ -27,7 +27,7 @@ def get_csv(pdf_path):
     # Criação final do DataFrame
     df = pd.DataFrame(dados)
     output_csv = pdf_path.replace('.pdf', '.csv')
-    df.to_csv(output_csv, index=False)
+    df.to_csv(f'csv/{output_csv}', index=False)
     print(f"✔ CSV salvo: {output_csv}")
 
 # === Loop pelos arquivos PDF em um diretório ===

@@ -56,9 +56,26 @@ df_pix["Valor"] = df_pix["Valor"].apply(moeda_para_float)
 df_pix["Operação"] = df_pix["Operação"].apply(lambda x: x.replace('Pix', '').strip())
 df_pix = df_pix.drop(columns='CPF/CNPJ')
 # === Agrupamento e totais de extrato ===
-df_agrupado = df.groupby('Descricao')['Valor'].sum().reset_index()
-entradas = df_agrupado[df_agrupado['Valor'] > 0]
-saidas = df_agrupado[df_agrupado['Valor'] < 0]
+
+def forma_pagamento(descricao):
+    if descricao.upper().startswith('PIX'):
+        return 'Pix'
+
+    if descricao.upper().startswith('PG'):
+        return 'Boleto'
+
+    return descricao.title()
+
+
+
+
+df['Descricao'] = df['Descricao'].apply(forma_pagamento)
+
+entradas = df[df['Valor'] > 0]
+entradas = entradas.groupby('Descricao')['Valor'].sum().reset_index()
+
+saidas = df[df['Valor'] < 0]
+saidas = saidas.groupby('Descricao')['Valor'].sum().reset_index()
 
 total_entradas = entradas['Valor'].sum()
 total_saidas = saidas['Valor'].sum()
@@ -109,7 +126,7 @@ with tab2:
         """, unsafe_allow_html=True)
 
     with col2:
-        st.data_editor(df_boletos.groupby('Complemento')['Valor'].sum().reset_index(), height=200, hide_index=True, column_config=config)
+        st.data_editor(pagos.groupby('Complemento')['Valor'].sum().reset_index(), height=200, hide_index=True, column_config=config)
 
     # === Outras tabelas ===
     st.subheader("📄 Boletos / Recibos Banrisul")
@@ -140,7 +157,7 @@ with tab3:
             st.data_editor(pix_env.groupby('Pagador/Recebedor')['Valor'].sum().reset_index(), height=200, hide_index=True, column_config=config)
 
     st.subheader("🔁 PIX Extrato")
-    st.data_editor(df_pix,height=300, hide_index=True,
+    st.data_editor(pix_env,height=300, hide_index=True,
                        column_config=config)
 
 
