@@ -164,16 +164,13 @@ def debug_extrair_linhas_pdf(arquivo_pdf: str, salvar_em_arquivo: bool = False):
             pagina_linhas = page.extract_text().splitlines()
             linhas.extend(pagina_linhas)
 
-            print(f"\n--- Página {i + 1} ---")
-            for linha in pagina_linhas:
-                print(linha)
 
     if salvar_em_arquivo:
         caminho_saida = "data/debug_linhas_pix.txt"
         with open(caminho_saida, "w", encoding="utf-8") as f:
             for linha in linhas:
                 f.write(linha + "\n")
-        print(f"\nLinhas salvas em: {caminho_saida}")
+
 
 
 def _valor_to_float_corrigido(v):

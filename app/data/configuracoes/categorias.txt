@@ -1,0 +1,10 @@
+Comissionados
+Funcionarios
+Produtos
+Aluguel
+Condominio
+Outros
+Imposto
+Manutenção
+Sistema
+Marketing
