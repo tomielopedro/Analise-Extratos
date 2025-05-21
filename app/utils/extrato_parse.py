@@ -1,19 +1,21 @@
 # utils.py
-import pdfplumber
+import fitz  # PyMuPDF
 import re
 import pandas as pd
+import pdfplumber
 
 
 def parse_extrato_bancario(arquivo_pdf: str) -> pd.DataFrame:
     """
     Faz o parse de extratos bancários mensais (com colunas: Dia, Descrição, Documento, Valor).
     """
-    texto_completo = ""
-    with pdfplumber.open(arquivo_pdf) as pdf:
-        for page in pdf.pages:
-            texto_completo += page.extract_text() + "\n"
+    doc = fitz.open(arquivo_pdf)
+    texto_completo = "".join([page.get_text() for page in doc])
 
-    padrao = re.compile(r"(?:(\d{2})\s+)?([A-Z ./]+?)\s{2,}(\d{6})\s+([\d.,\-]+)")
+    padrao = re.compile(
+        r"(?:(\d{2})\s+)?([A-Z].*?)\s{2,}(\d{6})\s+([\d.,\-]+)", re.MULTILINE
+    )
+
     dia_atual = ""
     dados = []
 
@@ -35,10 +37,10 @@ def parse_recibos_banrisul(arquivo_pdf: str) -> pd.DataFrame:
     """
     Faz o parse de recibos Banrisul, garantindo captura da última transação mesmo com rodapé.
     """
+    doc = fitz.open(arquivo_pdf)
     linhas = []
-    with pdfplumber.open(arquivo_pdf) as pdf:
-        for page in pdf.pages:
-            linhas.extend(page.extract_text().splitlines())
+    for page in doc:
+        linhas.extend(page.get_text().splitlines())
 
     dados = []
     buffer = []
@@ -70,72 +72,61 @@ def parse_recibos_banrisul(arquivo_pdf: str) -> pd.DataFrame:
     )
     df["Valor"] = pd.to_numeric(df["Valor"], errors="coerce")
     df = df.dropna(subset=["Valor"])
-
+    df["Complemento"] = df["Complemento"].str.extract(r"^(.*?)\s*-\s*")
     return df[:len(df) - 1]
 
-
-def parse_pix_extrato_fitz(pdf_path: str) -> pd.DataFrame:
+def parse_pix_extrato_fitz(arquivo_pdf: str) -> pd.DataFrame:
     """
-    Extrai do PDF de extrato PIX (Banrisul) as colunas:
-      Operação | Situação | Pagador/Recebedor | CPF/CNPJ | Data | Valor
-    Tratando quebras de linha e hífens no meio dos campos.
+    Faz o parse de extrato Pix do Banrisul extraído via PyMuPDF.
+    Retorna um DataFrame com colunas: Tipo, Direção, Pessoa, CPF/CNPJ, Data, Valor.
     """
-    texto = ""
-    with pdfplumber.open(pdf_path) as pdf:
-        for página in pdf.pages:
-            texto += página.extract_text() + "\n"
+    doc = fitz.open(arquivo_pdf)
+    texto = "\n".join([page.get_text() for page in doc])
 
-    texto = re.sub(r'-\s*\n', '', texto)
-    texto = re.sub(r'\n', ' ', texto)
-    texto = re.sub(r'\s{2,}', ' ', texto).strip()
+    # Normaliza espaços e quebras de linha
+    texto = re.sub(r'\s+', ' ', texto)
 
-    pattern = re.compile(
-        r'Pix\s+(\w+)\s+(\w+)\s+de\s+(.+?)\s+'
-        r'(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})\s+'
-        r'(\d{2}/\d{2}/\d{4})\s+'
-        r'R\$ ?([\d\.\,]+)',
-        flags=re.IGNORECASE
+    # Regex robusto para captar as informações
+    padrao = re.compile(
+        r"Pix\s+(Recebido|Enviado)\s+Efetivado\s+(?:de|para)\s+(.+?)\s+(\d{2,3}\.\d{3}\.\d{3}/\d{4}-\d{2}|\d{3}\.\d{3}\.\d{3}-\d{2})\s+(\d{2}/\d{2}/\d{4})\s+R\$\s*([\d.,]+)"
     )
 
-    registros = []
-    for m in pattern.finditer(texto):
-        situacao = f"{m.group(1).capitalize()} {m.group(2).capitalize()}"
-        nome = m.group(3).strip()
-        cpfcnpj = m.group(4)
-        data = m.group(5)
-        valor = float(m.group(6).replace(".", "").replace(",", "."))
-        registros.append({
-            "Operação": "Pix",
-            "Situação": situacao,
-            "Pagador/Recebedor": nome,
-            "CPF/CNPJ": cpfcnpj,
-            "Data": data,
-            "Valor": valor
-        })
+    dados = []
+    for tipo, pessoa, cpf_cnpj, data, valor in padrao.findall(texto):
+        valor = float(valor.replace('.', '').replace(',', '.'))
+        direcao = "de" if tipo == "Recebido" else "para"
+        dados.append([tipo, direcao, pessoa.strip(), cpf_cnpj.strip(), data, valor])
 
-    df = pd.DataFrame(registros,
-                      columns=["Operação", "Situação", "Pagador/Recebedor", "CPF/CNPJ", "Data", "Valor"])
+    df = pd.DataFrame(dados, columns=["Tipo", "Direcao", "Pessoa", "CPF/CNPJ", "Data", "Valor"])
     return df
 
+import pdfplumber
 
 def debug_extrair_linhas_pdf(arquivo_pdf: str, salvar_em_arquivo: bool = False):
     """
-    Função auxiliar para visualizar as linhas extraídas de um PDF Pix do Banrisul.
-    Isso ajuda a entender como o conteúdo está sendo estruturado no texto.
+    Função auxiliar para visualizar e/ou salvar as linhas extraídas de um PDF Pix do Banrisul.
+
+    Args:
+        arquivo_pdf (str): Caminho para o arquivo PDF a ser analisado.
+        salvar_em_arquivo (bool): Se True, salva as linhas em um arquivo de texto.
     """
     linhas = []
-    with pdfplumber.open(arquivo_pdf) as pdf:
-        for i, page in enumerate(pdf.pages):
+
+    with pdfplumber.open(arquivo_pdf) as doc:
+        for i, page in enumerate(doc.pages):
             pagina_linhas = page.extract_text().splitlines()
             linhas.extend(pagina_linhas)
+
             print(f"\n--- Página {i + 1} ---")
             for linha in pagina_linhas:
                 print(linha)
 
     if salvar_em_arquivo:
-        with open("data/debug_linhas_pix.txt", "w", encoding="utf-8") as f:
+        caminho_saida = "data/debug_linhas_pix.txt"
+        with open(caminho_saida, "w", encoding="utf-8") as f:
             for linha in linhas:
                 f.write(linha + "\n")
+        print(f"\nLinhas salvas em: {caminho_saida}")
 
 
 def _valor_to_float_corrigido(v):
@@ -143,3 +134,48 @@ def _valor_to_float_corrigido(v):
     if v.endswith("-"):
         v = "-" + v[:-1]
     return float(v)
+
+def moeda_para_float(valor):
+    return float(valor.replace("R$", "").replace(".", "").replace(",", ".").strip())
+
+def parse_pix_extrato_pdfplumber(caminho_pdf: str) -> pd.DataFrame:
+    """
+    Faz o parse de um extrato Pix do Banrisul em formato PDF usando pdfplumber.
+
+    Args:
+        caminho_pdf (str): Caminho para o arquivo PDF.
+
+    Returns:
+        pd.DataFrame: DataFrame com colunas: ['Tipo', 'Direcao', 'Nome', 'Documento', 'Data', 'Valor']
+    """
+    linhas = []
+
+    with pdfplumber.open(caminho_pdf) as pdf:
+        texto = "\n".join([page.extract_text() for page in pdf.pages if page.extract_text()])
+
+    # Junta linhas quebradas no meio
+    texto = texto.replace("\n", " ")
+
+    # Padrao para capturar as operações Pix
+    padrao = re.compile(
+        r"(Pix)\s+(?:de|para)?\s*(.*?)\s+(\d{2,3}[.\d]{3,}/\d{4}-\d{2}|\d{3}[.\d]{3}-\d{2})?\s*R?\$?\s*Efetivado\s+(\d{2}/\d{2}/\d{4})\s*(?:Recebido|Enviado)?\s*(.*?)?\s*([R\$ ]*[\d.,]+)",
+        flags=re.IGNORECASE
+    )
+
+    for match in padrao.findall(texto):
+        tipo, nome, documento, data, complemento, valor = match
+        direcao = "Recebido" if "Recebido" in texto[texto.find(match[0]):texto.find(match[0])+100] else "Enviado"
+
+        nome_completo = (nome + " " + complemento).strip()
+        valor = valor.replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".")
+        try:
+            valor_float = float(valor)
+        except ValueError:
+            valor_float = None
+
+        linhas.append([tipo, direcao, nome_completo, documento, data, valor_float])
+
+    df = pd.DataFrame(linhas, columns=["Tipo", "Direcao", "Nome", "Documento", "Data", "Valor"])
+    return df
+if __name__ == "__main__":
+    debug_extrair_linhas_pdf('../data/pix/abril25.pdf', True)
