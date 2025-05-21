@@ -13,15 +13,15 @@ st.set_page_config(layout="wide")
 
 # === Dicionário de meses e caminhos ===
 meses = {
-    'Agosto 2024': ["data/extratos/agosto24.pdf", "data/boletos/agosto24.pdf", "data/pix/agosto24.csv"],
-    'Setembro 2024': ["data/extratos/setembro24.pdf", "data/boletos/setembro24.pdf", "data/pix/setembro24.csv"],
-    'Outubro 2024': ["data/extratos/outubro24.pdf", "data/boletos/outubro24.pdf", "data/pix/outubro24.csv"],
-    'Novembro 2024': ["data/extratos/novembro24.pdf", "data/boletos/novembro24.pdf", "data/pix/novembro24.csv"],
-    'Dezembro 2024': ["data/extratos/dezembro24.pdf", "data/boletos/dezembro24.pdf", "data/pix/dezembro24.csv"],
-    'Janeiro 2025': ["data/extratos/janeiro25.pdf", "data/boletos/janeiro25.pdf", "data/pix/janeiro25.csv"],
-    'Fevereiro 2025': ["data/extratos/fevereiro25.pdf", "data/boletos/fevereiro25.pdf", "data/pix/fevereiro25.csv"],
-    'Marco 2025': ["data/extratos/marco25.pdf", "data/boletos/marco25.pdf", "data/pix/marco25.csv"],
-    'Abril 2025': ["data/extratos/abril25.pdf", "data/boletos/abril25.pdf", "data/pix/abril25.csv"]
+    'Agosto 2024': ["app/data/extratos/agosto24.pdf", "app/data/boletos/agosto24.pdf", "app/data/pix/agosto24.csv"],
+    'Setembro 2024': ["app/data/extratos/setembro24.pdf", "app/data/boletos/setembro24.pdf", "app/data/pix/setembro24.csv"],
+    'Outubro 2024': ["app/data/extratos/outubro24.pdf", "app/data/boletos/outubro24.pdf", "app/data/pix/outubro24.csv"],
+    'Novembro 2024': ["app/data/extratos/novembro24.pdf", "app/data/boletos/novembro24.pdf", "app/data/pix/novembro24.csv"],
+    'Dezembro 2024': ["app/data/extratos/dezembro24.pdf", "app/data/boletos/dezembro24.pdf", "app/data/pix/dezembro24.csv"],
+    'Janeiro 2025': ["app/data/extratos/janeiro25.pdf", "app/data/boletos/janeiro25.pdf", "app/data/pix/janeiro25.csv"],
+    'Fevereiro 2025': ["app/data/extratos/fevereiro25.pdf", "app/data/boletos/fevereiro25.pdf", "app/data/pix/fevereiro25.csv"],
+    'Marco 2025': ["app/data/extratos/marco25.pdf", "app/data/boletos/marco25.pdf", "app/data/pix/marco25.csv"],
+    'Abril 2025': ["app/data/extratos/abril25.pdf", "app/data/boletos/abril25.pdf", "app/data/pix/abril25.csv"]
 }
 
 # === Sidebar: seleção de mês ===
