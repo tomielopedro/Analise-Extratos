@@ -89,6 +89,7 @@ df_pix = df_pix.merge(categorias_pix, on='Pagador/Recebedor', how='left')
 categorias_boletos = pd.read_csv('app/data/configuracoes/categorias_boletos.csv')
 categorias_boletos = categorias_boletos[['Complemento', 'Categoria']]
 df_boletos = df_boletos.merge(categorias_boletos, on='Complemento', how='left')
+
 if categorias_selecionada != 'Todas':
     df_pix = df_pix[df_pix['Categoria'] == categorias_selecionada]
     df_boletos = df_boletos[df_boletos['Categoria'] == categorias_selecionada]
@@ -110,7 +111,7 @@ saidas = saidas.groupby('Descricao')['Valor'].sum().reset_index()
 
 total_entradas = entradas['Valor'].sum()
 total_saidas = saidas['Valor'].sum()
-tab1, tab2, tab3 = st.tabs(['Extrato', 'Boletos', 'Pix'])
+tab1, tab2, tab3, tab4 = st.tabs(['Extrato', 'Boletos', 'Pix', 'Dívidas'])
 
 
 
@@ -205,6 +206,14 @@ with tab3:
 
 
 
-
+with tab4:
+    caminho = 'app/data/configuracoes/dividas.csv'
+    df_dividas = pd.read_csv(caminho)
+    st.write(f'# Total de Dividas: R$ :red[{df_dividas['Valor'].sum():,.2f}]')
+    df_dividas = st.data_editor(df_dividas, use_container_width=True,num_rows='dynamic', key='df_dividas', column_config=config)
+    if st.button('Salvar'):
+        df_dividas.to_csv(caminho, index=False)
+        st.success('Salvo com sucesso!')
+        st.rerun()
 
 
